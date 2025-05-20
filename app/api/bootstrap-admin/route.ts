@@ -1,13 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 
-// Use service role to bypass RLS policies
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})
+// Create the admin client inside the handler function to ensure environment variables are available
+// This prevents issues during build time when environment variables might not be available
 
 /**
  * Bootstrap Admin API Route
@@ -17,12 +12,30 @@ const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, proces
  */
 export async function POST(request: Request) {
   try {
+    // Initialize Supabase admin client inside the handler function
+    // This ensures environment variables are available at runtime
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+    
     const { email, secretKey } = await request.json()
 
     // Verify secret key for security
     const adminSecretKey = process.env.BOOTSTRAP_ADMIN_SECRET_KEY || process.env.MIGRATION_SECRET_KEY
     if (!secretKey || secretKey !== adminSecretKey) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    
+    // Verify Supabase connection
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json({ error: "Supabase configuration missing" }, { status: 500 })
     }
 
     if (!email) {
@@ -137,18 +150,22 @@ export async function POST(request: Request) {
         
         // Fallback: Try to execute SQL directly with the Supabase client
         try {
-          // Execute SQL directly using the Supabase client
-          // We need to use a workaround since query() isn't directly exposed
-          await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+          // Execute SQL directly using the Supabase REST API
+          // This is more reliable than using RPC for complex SQL
+          const sqlResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/execute_sql`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
               Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-              Prefer: "return=minimal",
             },
             body: JSON.stringify({ query: createTableSql }),
           });
+          
+          if (!sqlResponse.ok) {
+            const errorText = await sqlResponse.text();
+            console.error("SQL execution error:", errorText);
+          }
           console.log("Created profiles table using direct SQL fallback");
         } catch (sqlErr) {
           console.error("Error in direct SQL fallback:", sqlErr);
@@ -188,18 +205,23 @@ export async function POST(request: Request) {
       
       // Fallback: Try to execute SQL directly with the Supabase client
       try {
-        // Execute SQL directly using the Supabase client
-        // We need to use a workaround since query() isn't directly exposed
-        await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+        // Execute SQL directly using the Supabase REST API
+        // This is more reliable than using RPC for complex SQL
+        const sqlResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/execute_sql`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
             Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-            Prefer: "return=minimal",
           },
           body: JSON.stringify({ query: updateProfileSql }),
         });
+        
+        if (!sqlResponse.ok) {
+          const errorText = await sqlResponse.text();
+          console.error("SQL execution error:", errorText);
+          throw new Error(`Error executing SQL: ${errorText}`);
+        }
         console.log("Updated profile using direct SQL fallback");
       } catch (sqlErr: any) {
         console.error("Error in direct SQL fallback for profile update:", sqlErr);
