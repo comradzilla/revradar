@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 5.3%;
+    --foreground: 0 0% 89.8%;
+
+    --card: 0 0% 10.2%;
+    --card-foreground: 0 0% 89.8%;
+
+    --popover: 0 0% 10.2%;
+    --popover-foreground: 0 0% 89.8%;
+
+    --primary: 133 45% 43%;
+    --primary-foreground: 144.9 80.4% 10%;
+
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 89.8%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 89.8%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 89.8%;
+
+    --border: 0 0% 18.4%;
+    --input: 0 0% 18.4%;
+    --ring: 133 45% 43%;
+
+    --radius: 0.5rem;
+
+    /* Variable highlight colors */
+    --variable-text: 280 59% 65%;
+    --variable-bg: 280 59% 65% / 0.1;
+    --variable-bg-hover: 280 59% 65% / 0.2;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Grid background pattern */
+.grid-pattern {
+  background-image: linear-gradient(to right, rgba(46, 46, 46, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(46, 46, 46, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@layer components {
+  .variable-highlight {
+    @apply text-[#B57EDC] bg-[rgba(181,126,220,0.1)] px-0.5 rounded cursor-help transition-colors;
+  }
+
+  .variable-highlight:hover {
+    @apply bg-[rgba(181,126,220,0.2)];
+  }
+}
