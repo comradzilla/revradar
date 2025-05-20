@@ -218,22 +218,93 @@ export interface Database {
   }
 }
 
+/**
+ * Database Types
+ * 
+ * This file contains type definitions for database entities and UI-specific types.
+ * These types are used throughout the application to ensure type safety.
+ */
+
 // Derived types for our application
 export type Category = Database["public"]["Tables"]["categories"]["Row"]
 export type Subcategory = Database["public"]["Tables"]["subcategories"]["Row"]
 export type Prompt = Database["public"]["Tables"]["prompts"]["Row"]
 export type PromptAnalytic = Database["public"]["Tables"]["prompt_analytics"]["Row"]
-export type Role = Database["public"]["Tables"]["roles"]["Row"]
-export type UserRole = Database["public"]["Tables"]["user_roles"]["Row"]
-export type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"]
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 
-// Types for our application UI
-export interface CategoryWithSubcategories extends Omit<Category, "created_at" | "updated_at"> {
-  subcategories?: Array<Omit<Subcategory, "created_at" | "updated_at" | "category_id">>
+/**
+ * Role type definition
+ * Represents a user role in the system with associated permissions
+ */
+export interface Role {
+  id: number;
+  name: string;
+  description?: string;
+  permissions?: Json;
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface PromptWithVariables extends Omit<Prompt, "created_at" | "updated_at" | "variables"> {
-  variables?: Record<string, { name: string; description: string; example?: string }>
-  searchScore?: number
+/**
+ * UserRole type definition
+ * Represents the many-to-many relationship between users and roles
+ */
+export interface UserRole {
+  id?: number;
+  user_id: string;
+  role_id: number;
+  roles?: Role;
+  created_at?: string;
+}
+
+/**
+ * AuditLog type definition
+ * Represents an audit log entry for tracking system changes
+ */
+export type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"]
+
+/**
+ * Profile type definition
+ * Represents a user profile with associated metadata
+ */
+export interface Profile {
+  id: string;
+  email?: string;
+  is_admin: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+// Types for our application UI
+
+/**
+ * CategoryWithSubcategories
+ * Extended category type that includes its subcategories for UI rendering
+ */
+export interface CategoryWithSubcategories {
+  id: string;
+  name: string;
+  created_by?: string | null;
+  subcategories: Array<{
+    id: string;
+    name: string;
+  }>;
+}
+
+/**
+ * PromptWithVariables
+ * Extended prompt type that includes structured variables for UI rendering
+ */
+export interface PromptWithVariables {
+  id: string;
+  title: string;
+  description: string;
+  when_to_use: string;
+  content: string;
+  category_id: string;
+  status: string;
+  created_by: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  variables?: Record<string, { name: string; description: string; example?: string }>;
+  searchScore?: number;
 }

@@ -9,6 +9,7 @@ import type {
   Prompt,
   Role,
   AuditLog,
+  Json,
 } from "@/lib/supabase/database.types"
 
 // Categories
@@ -329,52 +330,122 @@ export async function isDatabaseSeeded(): Promise<boolean> {
   return true
 }
 
+/**
+ * Role-based access control functions
+ * These functions manage user roles and permissions in the application
+ */
+
 // Role-based access control
 export async function getUserRoles(userId: string): Promise<Role[]> {
-  const { data, error } = await supabase.from("user_roles").select("roles(*)").eq("user_id", userId)
+  try {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("roles(*)")
+      .eq("user_id", userId);
 
-  if (error) {
-    console.error("Error fetching user roles:", error)
-    return []
+    if (error) {
+      throw new Error(`Error fetching user roles: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Properly type and transform the roles data
+    const roles: Role[] = [];
+    
+    // Safely extract role data
+    data.forEach(item => {
+      // First cast to unknown to avoid TypeScript errors
+      const roleData = (item as any).roles;
+      
+      if (roleData && typeof roleData === 'object' && 'id' in roleData && 'name' in roleData) {
+        roles.push({
+          id: roleData.id,
+          name: roleData.name,
+          description: roleData.description,
+          permissions: roleData.permissions,
+          created_at: roleData.created_at,
+          updated_at: roleData.updated_at
+        });
+      }
+    });
+    
+    return roles;
+  } catch (error) {
+    console.error("Error in getUserRoles:", error);
+    return [];
   }
-
-  return data.map((item) => item.roles) as Role[]
 }
 
 export async function assignRoleToUser(userId: string, roleId: number): Promise<boolean> {
-  const { error } = await supabase.from("user_roles").insert({
-    user_id: userId,
-    role_id: roleId,
-  })
+  try {
+    // Check if the role assignment already exists to prevent duplicates
+    const { data: existingRole } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("role_id", roleId)
+      .single();
+    
+    if (existingRole) {
+      // Role is already assigned, no need to insert
+      return true;
+    }
+    
+    const { error } = await supabase
+      .from("user_roles")
+      .insert({
+        user_id: userId,
+        role_id: roleId,
+      });
 
-  if (error) {
-    console.error("Error assigning role to user:", error)
-    return false
+    if (error) {
+      throw new Error(`Error assigning role to user: ${error.message}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in assignRoleToUser:", error);
+    return false;
   }
-
-  return true
 }
 
 export async function removeRoleFromUser(userId: string, roleId: number): Promise<boolean> {
-  const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role_id", roleId)
+  try {
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role_id", roleId);
 
-  if (error) {
-    console.error("Error removing role from user:", error)
-    return false
+    if (error) {
+      throw new Error(`Error removing role from user: ${error.message}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in removeRoleFromUser:", error);
+    return false;
   }
-
-  return true
 }
 
 export async function getRoles(): Promise<Role[]> {
-  const { data, error } = await supabase.from("roles").select("*").order("id")
+  try {
+    const { data, error } = await supabase
+      .from("roles")
+      .select("*")
+      .order("name");
 
-  if (error) {
-    console.error("Error fetching roles:", error)
-    return []
+    if (error) {
+      throw new Error(`Error fetching roles: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error in getRoles:", error);
+    return [];
   }
-
-  return data
 }
 
 // Audit logs
