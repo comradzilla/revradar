@@ -137,8 +137,18 @@ export async function POST(request: Request) {
         
         // Fallback: Try to execute SQL directly with the Supabase client
         try {
-          // @ts-ignore - Using private API as a fallback
-          await supabaseAdmin.rest.query(createTableSql);
+          // Execute SQL directly using the Supabase client
+          // We need to use a workaround since query() isn't directly exposed
+          await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+              Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ query: createTableSql }),
+          });
           console.log("Created profiles table using direct SQL fallback");
         } catch (sqlErr) {
           console.error("Error in direct SQL fallback:", sqlErr);
@@ -178,8 +188,18 @@ export async function POST(request: Request) {
       
       // Fallback: Try to execute SQL directly with the Supabase client
       try {
-        // @ts-ignore - Using private API as a fallback
-        await supabaseAdmin.rest.query(updateProfileSql);
+        // Execute SQL directly using the Supabase client
+        // We need to use a workaround since query() isn't directly exposed
+        await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ query: updateProfileSql }),
+        });
         console.log("Updated profile using direct SQL fallback");
       } catch (sqlErr: any) {
         console.error("Error in direct SQL fallback for profile update:", sqlErr);
