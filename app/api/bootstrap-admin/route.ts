@@ -23,14 +23,17 @@ export async function POST(request: Request) {
     }
 
     // Check if user exists
-    const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email)
-
-    if (userError) {
-      return NextResponse.json({ error: `Error finding user: ${userError.message}` }, { status: 500 })
+    const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    
+    if (listError) {
+      return NextResponse.json({ error: `Error listing users: ${listError.message}` }, { status: 500 })
     }
-
+    
+    // Find the user with the matching email
+    const user = users?.users.find((u) => u.email === email)
+    
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      return NextResponse.json({ error: "User not found with the provided email" }, { status: 404 })
     }
 
     // Check if profiles table exists
@@ -84,7 +87,7 @@ export async function POST(request: Request) {
     // This bypasses RLS policies
     const { error: updateError } = await supabaseAdmin.sql(`
       INSERT INTO profiles (id, is_admin)
-      VALUES ('${user.user.id}', true)
+      VALUES ('${user.id}', true)
       ON CONFLICT (id) 
       DO UPDATE SET is_admin = true, updated_at = NOW();
     `)
