@@ -77,7 +77,10 @@ export default function AdminUsersPage() {
       // Combine data
       const combinedUsers = usersData.map((profile) => {
         const authUser = authUsers?.users.find((u) => u.id === profile.id)
-        const userRolesList = userRoles?.filter((ur) => ur.user_id === profile.id).map((ur) => ur.roles) as Role[]
+        const userRolesList = userRoles
+  ?.filter((ur) => ur.user_id === profile.id)
+  .map((ur) => ur.roles)
+  .flat() as Role[]
 
         return {
           id: profile.id,
